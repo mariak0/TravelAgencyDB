@@ -1,0 +1,273 @@
+DELIMITER $$
+CREATE TRIGGER log_insert_trip AFTER INSERT ON trip
+FOR EACH ROW
+BEGIN
+   declare username VARCHAR(255);
+   declare  timestamp   TIMESTAMP;
+   set username = (select user());
+   
+  INSERT INTO log_trip (action, action_time, table_name,table_username )
+  VALUES('INSERT', NOW(),'trip',username);
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE TRIGGER log_update_trip AFTER UPDATE ON trip
+FOR EACH ROW
+BEGIN
+   declare username VARCHAR(255);
+   declare  timestamp   TIMESTAMP;
+   set username = (select user());
+   
+  INSERT INTO log_trip (action, action_time, table_name,table_username )
+  VALUES('UPDATE', NOW(),'trip',username);
+END$$
+DELIMITER ;
+
+
+DELIMITER $$
+CREATE TRIGGER log_delete_trip AFTER DELETE ON trip
+FOR EACH ROW
+BEGIN
+   declare username VARCHAR(255);
+   declare  timestamp   TIMESTAMP;
+   set username = (select user());
+   
+  INSERT INTO log_trip (action, action_time, table_name,table_username )
+  VALUES('DELETE', NOW(),'trip',username);
+  END$$
+DELIMITER ;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DELIMITER $$
+CREATE TRIGGER log_insert_destination AFTER INSERT ON destination
+FOR EACH ROW
+BEGIN
+   declare username VARCHAR(255);
+   declare  timestamp   TIMESTAMP;
+   set username = (select user());
+   
+  INSERT INTO log_trip (action, action_time, table_name,table_username )
+  VALUES('INSERT', NOW(),'destination',username);
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE TRIGGER log_update_destination AFTER UPDATE ON destination
+FOR EACH ROW
+BEGIN
+   declare username VARCHAR(255);
+   declare  timestamp   TIMESTAMP;
+   set username = (select user());
+   
+  INSERT INTO log_trip (action, action_time, table_name,table_username )
+  VALUES('UPDATE', NOW(),'destination',username);
+END$$
+DELIMITER ;
+
+
+DELIMITER $$
+CREATE TRIGGER log_delete_destination AFTER DELETE ON destination
+FOR EACH ROW
+BEGIN
+   declare username VARCHAR(255);
+   declare  timestamp   TIMESTAMP;
+   set username = (select user());
+   
+  INSERT INTO log_trip (action, action_time, table_name,table_username )
+  VALUES('DELETE', NOW(),'destination',username);
+  END$$
+DELIMITER ;
+
+
+
+
+
+
+
+DELIMITER $$
+CREATE TRIGGER log_insert_reservation AFTER INSERT ON reservation
+FOR EACH ROW
+BEGIN
+   declare username VARCHAR(255);
+   declare  timestamp   TIMESTAMP;
+   set username = (select user());
+   
+  INSERT INTO log_trip (action, action_time, table_name,table_username )
+  VALUES('INSERT', NOW(),'reservation',username);
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE TRIGGER log_update_reservation AFTER UPDATE ON reservation
+FOR EACH ROW
+BEGIN
+   declare username VARCHAR(255);
+   declare  timestamp   TIMESTAMP;
+   set username = (select user());
+   
+  INSERT INTO log_trip (action, action_time, table_name,table_username )
+  VALUES('UPDATE', NOW(),'reservation',username);
+END$$
+DELIMITER ;
+
+
+DELIMITER $$
+CREATE TRIGGER log_delete_reservation AFTER DELETE ON reservation
+FOR EACH ROW
+BEGIN
+   declare username VARCHAR(255);
+   declare  timestamp   TIMESTAMP;
+   set username = (select user());
+   
+  INSERT INTO log_trip (action, action_time, table_name,table_username )
+  VALUES('DELETE', NOW(),'reservation',username);
+  END$$
+DELIMITER ;
+
+
+
+
+
+
+
+DELIMITER $$
+CREATE TRIGGER log_insert_event AFTER INSERT ON event
+FOR EACH ROW
+BEGIN
+   declare username VARCHAR(255);
+   declare  timestamp   TIMESTAMP;
+   set username = (select user());
+   
+  INSERT INTO log_trip (action, action_time, table_name,table_username )
+  VALUES('INSERT', NOW(),'event',username);
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE TRIGGER log_update_event AFTER UPDATE ON event
+FOR EACH ROW
+BEGIN
+   declare username VARCHAR(255);
+   declare  timestamp   TIMESTAMP;
+   set username = (select user());
+   
+  INSERT INTO log_trip (action, action_time, table_name,table_username )
+  VALUES('UPDATE', NOW(),'event',username);
+END$$
+DELIMITER ;
+
+
+DELIMITER $$
+CREATE TRIGGER log_delete_event AFTER DELETE ON event
+FOR EACH ROW
+BEGIN
+   declare username VARCHAR(255);
+   declare  timestamp   TIMESTAMP;
+   set username = (select user());
+   
+  INSERT INTO log_trip (action, action_time, table_name,table_username )
+  VALUES('DELETE', NOW(),'event',username);
+  END$$
+DELIMITER ;
+
+
+
+
+
+
+
+
+
+DELIMITER $$
+CREATE TRIGGER log_insert_travel_to AFTER INSERT ON travel_to
+FOR EACH ROW
+BEGIN
+   declare username VARCHAR(255);
+   declare  timestamp   TIMESTAMP;
+   set username = (select user());
+   
+  INSERT INTO log_trip (action, action_time, table_name,table_username )
+  VALUES('INSERT', NOW(),'travel_to',username);
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE TRIGGER log_update_travel_to AFTER UPDATE ON travel_to
+FOR EACH ROW
+BEGIN
+   declare username VARCHAR(255);
+   declare  timestamp   TIMESTAMP;
+   set username = (select user());
+   
+  INSERT INTO log_trip (action, action_time, table_name,table_username )
+  VALUES('UPDATE', NOW(),'travel_to',username);
+END$$
+DELIMITER ;
+
+
+DELIMITER $$
+CREATE TRIGGER log_delete_travel_to AFTER DELETE ON travel_to
+FOR EACH ROW
+BEGIN
+   declare username VARCHAR(255);
+   declare  timestamp   TIMESTAMP;
+   set username = (select user());
+   
+  INSERT INTO log_trip (action, action_time, table_name,table_username )
+  VALUES('DELETE', NOW(),'travel_to',username);
+  END$$
+DELIMITER ;
+
+
+
+DELIMITER $
+CREATE TRIGGER check_reservation BEFORE update ON trip
+
+FOR EACH ROW
+
+BEGIN 
+
+declare resid int(11);
+
+set resid=new.tr_id;
+
+call trigger2(resid, @istrue);
+
+if (@istrue=1)
+   then 
+   if(new.tr_departure!=old.tr_departure or new.tr_return!=old.tr_return or new.tr_cost!=old.tr_cost)
+  then  
+  SIGNAL SQLSTATE VALUE '45000'
+  SET MESSAGE_TEXT = 'THERE ARE ALREADY RESERVATIONS IN THIS TRIP YOU CANNOT CHANGE THE DEPARTURE AND RETURN DATES AND THE COST';
+  END IF;
+  END IF;
+END$
+DELIMITER ;
+
+
+
+DELIMITER $
+
+CREATE TRIGGER salary
+BEFORE UPDATE ON worker
+FOR EACH ROW
+BEGIN
+    IF NEW.wrk_salary < OLD.wrk_salary THEN
+       SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Cannot decrease salary';
+    END IF;
+END$
+DELIMITER ;

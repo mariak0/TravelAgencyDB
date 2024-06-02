@@ -1,0 +1,230 @@
+
+DELIMITER $
+CREATE PROCEDURE new_driver(IN ID CHAR(10), NAME VARCHAR(20), LNAME VARCHAR(20),
+                             SALARY FLOAT(7.2),license ENUM('A', 'B', 'C', 'D'),route ENUM('LOCAL', 'ABROAD'),experience TINYINT(4))
+BEGIN
+DECLARE not_found INT;
+declare count_branch int;
+declare brcode int(11);
+select br_code into brcode from
+              (select min(num), br_code from(select count(drv_AT) num ,  br_code  from worker 
+			  inner join driver on wrk_AT=drv_AT inner join branch on wrk_br_code=br_code group by  wrk_br_code order by NUM ) as a)as b;
+        
+	
+insert into worker (wrk_AT, wrk_name, wrk_lname, wrk_salary, wrk_br_code) 
+ VALUES (id,name,lname,salary,brcode);
+
+insert into driver (drv_AT , drv_license, drv_route, drv_experience) values
+(id,license,route,experience); 
+
+
+END$
+DELIMITER ;
+
+
+
+
+	
+DELIMITER $
+CREATE PROCEDURE tripbranch(IN code int(11), IN date1 date, IN date2 date)
+BEGIN 
+    DECLARE not_found INT ;
+    DECLARE departure date;
+    DECLARE number_of_reservations INT;
+    DECLARE cost INT(11);
+	DECLARE driver_name CHAR(25);
+	DECLARE driver_lastname CHAR(25);
+	DECLARE guide_name CHAR(25);
+	DECLARE guide_lastname CHAR(25);
+    DECLARE max_seats TINYINT(4);
+	declare remaining_seats int;
+    DECLARE tr CURSOR FOR 
+        SELECT tr_id, tr_cost, tr_maxseats, tr_departure,count(tr_id)
+        FROM branch INNER JOIN trip ON br_code=tr_br_code INNER JOIN  reservation ON tr_id=res_tr_id
+        WHERE br_code=code group by res_tr_id;
+  
+  declare tr1 cursor for 
+  select wrk_name, wrk_lname FROM branch INNER JOIN trip ON br_code=tr_br_code inner join driver on tr_drv_AT=drv_AT inner join worker ON drv_AT=wrk_AT where br_code=code ;
+  declare tr2 cursor for
+  select wrk_name, wrk_lname FROM branch INNER JOIN trip ON br_code=tr_br_code  inner join guide on tr_gui_AT=gui_AT inner join worker ON gui_AT=wrk_AT where br_code=code ;	
+  
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET not_found=1;
+	
+    SET not_found = 0;
+    OPEN tr;
+	open tr1;
+	open tr2;
+	
+    REPEAT
+	    fetch tr1  into driver_name, driver_lastname; 
+		fetch  tr2 into guide_name, guide_lastname;
+        FETCH tr INTO code, cost, max_seats, departure, number_of_reservations;
+       IF(not_found=0)
+		THEN
+            IF date1 <= departure AND date2 >= departure THEN
+			    set remaining_seats=max_seats-number_of_reservations;
+                SELECT cost, max_seats,number_of_reservations,driver_name, driver_lastname,guide_name, guide_lastname, remaining_seats ;
+			else select 'there is no trip for this dates';	
+            END IF;
+        END IF;
+    UNTIL(not_found=1)
+	END REPEAT;
+    CLOSE tr;
+	CLOSE tr1;
+	CLOSE tr2;
+END$
+DELIMITER ;
+
+
+
+
+
+
+
+DELIMITER $
+
+CREATE PROCEDURE delete_employee(IN fname VARCHAR(20), IN lname VARCHAR(20) )
+
+BEGIN
+     
+     DECLARE adm VARCHAR(20);
+	  DECLARE mng VARCHAR(20);
+	 DECLARE A_T VARCHAR(20);
+    SELECT wrk_AT INTO A_T FROM worker  WHERE fname = wrk_name AND lname = wrk_lname;
+     
+	 select  adm_AT INTO adm FROM worker INNER JOIN admin on wrk_AT=adm_AT WHERE fname = wrk_name AND lname = wrk_lname;
+	 
+	 select mng_adm_at into mng from worker INNER JOIN admin on wrk_AT=adm_AT INNER JOIN manages on adm_AT=mng_adm_AT WHERE fname = wrk_name AND lname = wrk_lname;
+	
+	IF adm=A_T THEN
+	
+    IF  mng=A_T THEN
+	SELECT 'Access deny! Cannot delete a branch manager';
+	
+	ELSE 
+	  DELETE FROM worker WHERE wrk_AT=A_T;
+	  SELECT 'THE ADMIN IS DELETED';
+	 END IF ;  
+	 
+	 ELSE SELECT 'THIS ADMIN DOESENT EXIST';
+	
+	 
+
+END IF;
+
+END$
+
+DELIMITER ;
+
+
+
+
+
+
+create index pay_index on reservation_offers(lname,fname,advance_payment);
+DELIMITER $
+CREATE PROCEDURE pay(IN price1 INT, IN price2 INT )
+
+BEGIN
+ DECLARE name VARCHAR(25);
+ DECLARE lastname VARCHAR(25);
+DECLARE not_found INT;
+DECLARE c CURSOR FOR 
+         select fname, lname from reservation_offers where advance_payment BETWEEN price1 AND price2;
+  
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET not_found=1;
+	
+    SET not_found = 0;
+    OPEN c;
+
+	
+    REPEAT
+	    fetch c  into name, lastname ; 
+		 
+       IF(not_found=0)
+		THEN
+           select name,lastname;
+        END IF;
+    UNTIL(not_found=1)
+	END REPEAT;
+    
+	CLOSE c;
+END$
+DELIMITER ;
+
+
+
+
+create index pay_index on reservation_offers(lname,fname,advance_payment);
+DELIMITER $
+
+CREATE PROCEDURE offer_lastname(IN lastname VARCHAR(24) )
+
+BEGIN
+
+   DECLARE  name VARCHAR(25);
+   DECLARE  code INT;
+   DECLARE  times_found INT;
+   DECLARE not_found INT;
+DECLARE b CURSOR FOR 
+    select fname,lname, res_code_offer, count(*) from reservation_offers inner join offers on res_code_offer=code_offer where lname=lastname group by res_code_offer;
+	
+	
+	 DECLARE CONTINUE HANDLER FOR NOT FOUND SET not_found=1;
+	
+    SET not_found = 0;
+    OPEN b;
+
+	
+    REPEAT
+	    fetch b  into name, lastname, code, times_found; 
+		 
+       IF(not_found=0)
+		THEN
+           select name, lastname,code, times_found;
+        END IF;
+    UNTIL(not_found=1)
+	END REPEAT;
+    
+	CLOSE b;
+END$
+DELIMITER ;
+
+
+
+DELIMITER $
+CREATE PROCEDURE trigger2(IN id INT(11), out istrue boolean )
+BEGIN 
+
+declare num int;
+declare maxs tinyint(4);
+
+DECLARE not_found INT;
+	DECLARE trip_cursor CURSOR FOR
+	SELECT count(tr_id) FROM trip inner join reservation on res_tr_id= tr_id WHERE  tr_id=id group by res_tr_id;
+	DECLARE CONTINUE HANDLER FOR NOT FOUND SET not_found = 1;
+
+
+SET not_found = 0;
+OPEN trip_cursor;
+	
+	REPEAT
+	
+    FETCH trip_cursor INTO num;
+    IF(not_found=0)
+	then 
+	 if(num>=1)
+	  then set istrue=true;
+	 
+	  end if;
+	   
+END IF;
+	UNTIL(not_found=1)
+	END REPEAT; 
+
+CLOSE trip_cursor;
+   
+   
+END$
+   
+DELIMITER ;
